@@ -9,6 +9,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  Keyboard,
 } from 'react-native';
 import {Buffer} from 'buffer';
 import {Button, Icon, Text} from '@rneui/themed';
@@ -33,7 +35,7 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
     DEVICE_CHARSET: Platform.OS === 'ios' ? 1536 : 'utf-8',
   };
 
-  let disconnectSubscription: any;
+  // let disconnectSubscription: any;
   let readSubscription: any;
   let readInterval: NodeJS.Timeout;
 
@@ -59,19 +61,53 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
     }
   }, [data?.length]);
   useEffect(() => {
-    const saveDataToLocal = async () => {
-      AsyncStorage.setItem(
-        `Conversation_${props.device.address}`,
-        JSON.stringify(data),
-      );
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        if (scrollRef.current) {
+          setTimeout(() => {
+            scrollRef.current.scrollToEnd();
+          }, 150);
+        }
+      },
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
     };
-    if (data.length > 0) {
-      saveDataToLocal();
+  }, []);
+  const backBtnPress = () => {
+    if (!connection) {
+      props.onBack();
+      return;
+    }
+    Alert.alert('Confirm', 'You want to exit?', [
+      {
+        text: 'Cancel',
+        onPress: () => console.log('Cancel Pressed'),
+        style: 'cancel',
+      },
+      {text: 'OK', onPress: () => disconnect().then(() => props.onBack())},
+    ]);
+  };
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const saveDataToLocal = async () => {
+        AsyncStorage.setItem(
+          `Conversation_${props.device.address}`,
+          JSON.stringify(data),
+        );
+      };
+      if (data.length > 0) {
+        saveDataToLocal();
+      }
     }
   }, [data, props.device.address]);
   useEffect(() => {
     getDataFromLocal().then(res => {
-      setData(res);
+      if (res && res.length > 0) {
+        setData(res);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -133,6 +169,7 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
       });
     }
     uninitializeRead();
+    return Promise.resolve();
   };
 
   const initializeRead = () => {
@@ -188,6 +225,7 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
   };
 
   const addData = (message: any) => {
+    console.log('vao day', data);
     setData((prevData: any) => [message, ...prevData]);
   };
 
@@ -229,8 +267,8 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
     const newDate = new Date(date);
     const hours = newDate.getHours().toString().padStart(2, '0');
     const minutes = newDate.getMinutes().toString().padStart(2, '0');
-    const seconds = newDate.getSeconds().toString().padStart(2, '0');
-    const formattedTime = `${hours}:${minutes}:${seconds}`;
+    // const seconds = newDate.getSeconds().toString().padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}`;
     return formattedTime;
   };
   const renderMessage = (item: any) => {
@@ -252,13 +290,27 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
         <View
           style={{
             maxWidth: '80%',
-            backgroundColor: isSent ? '#3490de' : '#3d84a8',
-            padding: 5,
-            paddingHorizontal: 10,
             marginVertical: 10,
-            borderRadius: 12,
           }}>
-          <Text style={{flexShrink: 1, color: 'white'}}>{item.data}</Text>
+          <View
+            style={{
+              backgroundColor: isSent ? '#3490de' : '#E5E5E5',
+              padding: 5,
+              paddingHorizontal: 10,
+              borderRadius: 12,
+            }}>
+            <Text style={{color: isSent ? 'white' : 'black', flexShrink: 1}}>
+              {item.data}
+            </Text>
+          </View>
+          <Text
+            style={{
+              alignSelf: isSent ? 'flex-end' : 'flex-start',
+              fontSize: 10,
+              marginHorizontal: 5,
+            }}>
+            {getTime(item.timestamp)}
+          </Text>
         </View>
       </View>
     );
@@ -267,7 +319,7 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
     <View style={{flex: 1}}>
       <View style={{paddingHorizontal: 24}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <TouchableOpacity onPress={props.onBack}>
+          <TouchableOpacity onPress={backBtnPress}>
             <Icon name="arrow-left" type="font-awesome" color="#517fa4" />
           </TouchableOpacity>
           <Text h3 style={{textAlign: 'center', color: '#2d2d2d', flexGrow: 1}}>
@@ -309,20 +361,29 @@ const ConnectionScreen: React.FC<ConnectionScreenProps> = props => {
             height: '100%',
             justifyContent: 'space-between',
           }}>
-          <ScrollView
-            ref={scrollRef}
-            style={{
-              paddingHorizontal: 24,
-            }}>
-            {data
-              .slice()
-              .reverse()
-              .map(item => renderMessage(item))}
-          </ScrollView>
+          {data && data.length > 0 ? (
+            <ScrollView
+              ref={scrollRef}
+              style={{
+                paddingHorizontal: 24,
+              }}>
+              {data
+                .slice()
+                .reverse()
+                .map(item => renderMessage(item))}
+            </ScrollView>
+          ) : (
+            <View style={{flex: 1}} />
+          )}
           <InputArea
             text={text}
             onChangeText={newText => setText(newText)}
-            onSend={() => sendData()}
+            onSend={() => {
+              console.log('vao day');
+              if (text && text.trim() !== '') {
+                sendData();
+              }
+            }}
             disabled={!connection}
           />
         </View>

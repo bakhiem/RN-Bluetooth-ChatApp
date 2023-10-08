@@ -3,11 +3,13 @@ import React, {useState, useEffect} from 'react';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import {View, FlatList} from 'react-native';
 import {Button, CheckBox, ListItem} from '@rneui/themed';
+import {Text} from 'react-native-elements';
 
 const DeviceListScreen: React.FC<{
   selectDevice: (device: any) => void;
 }> = ({selectDevice}) => {
   const [devices, setDevices] = useState<any[]>([]);
+  const [devicesBonded, setDevicesBonded] = useState<any[]>([]);
   const [accepting, setAccepting] = useState<boolean>(false);
   const [discovering, setDiscovering] = useState<boolean>(false);
 
@@ -54,6 +56,7 @@ const DeviceListScreen: React.FC<{
     let devicesCopy = [...devices];
     try {
       let unpaired = await RNBluetoothClassic.startDiscovery();
+      console.log('vao dayh', unpaired)
       let index = devicesCopy.findIndex(d => !d.bonded);
       if (index >= 0) {
         devicesCopy.splice(index, devicesCopy.length - index, ...unpaired);
@@ -76,10 +79,10 @@ const DeviceListScreen: React.FC<{
       let bonded = await RNBluetoothClassic.getBondedDevices();
 
       if (!unloading) {
-        setDevices(bonded);
+        setDevicesBonded(bonded);
       }
     } catch (err: any) {
-      setDevices([]);
+      setDevicesBonded([]);
       console.log(err.message);
     }
   };
@@ -150,12 +153,29 @@ const DeviceListScreen: React.FC<{
         />
       </View>
       <View>
+        {devicesBonded.length > 0 && (
+          <>
+            <Text h5 style={{textAlign: 'center'}}>
+              Paired devices
+            </Text>
+            <FlatList
+              keyExtractor={(item, index) => index.toString()}
+              data={devicesBonded}
+              renderItem={renderItem}
+            />
+          </>
+        )}
         {devices.length > 0 && (
-          <FlatList
-            keyExtractor={(item, index) => index.toString()}
-            data={devices}
-            renderItem={renderItem}
-          />
+          <>
+            <Text h5 style={{textAlign: 'center'}}>
+              Available devices
+            </Text>
+            <FlatList
+              keyExtractor={(item, index) => index.toString()}
+              data={devices}
+              renderItem={renderItem}
+            />
+          </>
         )}
       </View>
     </View>

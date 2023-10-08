@@ -25,10 +25,10 @@ const ChatContainer = () => {
     }
   };
   const enableBluetooth = async () => {
-    let granted = await requestAccessFineLocationPermission();
-    if (granted) {
-      RNBluetoothClassic.requestBluetoothEnabled();
-    }
+    // let granted = await requestAccessFineLocationPermission();
+    // if (granted) {
+    RNBluetoothClassic.requestBluetoothEnabled();
+    // }
   };
   useEffect(() => {
     const enabledSubscription = RNBluetoothClassic.onBluetoothEnabled(event =>
