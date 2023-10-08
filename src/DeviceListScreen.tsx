@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useEffect} from 'react';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
-import {View, FlatList} from 'react-native';
+import {View, FlatList, Platform, PermissionsAndroid} from 'react-native';
 import {Button, CheckBox, ListItem} from '@rneui/themed';
 import {Text} from 'react-native-elements';
 
@@ -50,8 +50,26 @@ const DeviceListScreen: React.FC<{
       console.log('Unable to cancel accept connection.');
     }
   };
+  const requestAccessFineLocationPermission = async () => {
+    if (Platform.OS === 'android' && Platform.Version >= 23) {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
 
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    } else {
+      return true;
+    }
+  };
   const startDiscovery = async () => {
+    let granted = await requestAccessFineLocationPermission();
+    if (!granted) {
+      return;
+    }
     setDiscovering(true);
     let devicesCopy = [...devices];
     try {

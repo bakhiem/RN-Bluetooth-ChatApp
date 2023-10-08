@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import {Text, Button} from '@rneui/themed';
 import React, {useEffect, useState} from 'react';
-import {PermissionsAndroid, Platform, View} from 'react-native';
+import {View} from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import DeviceListScreen from './DeviceListScreen';
 import ConnectionScreen from './ConnectionScreen';
@@ -9,26 +9,9 @@ import ConnectionScreen from './ConnectionScreen';
 const ChatContainer = () => {
   const [device, setDevice] = useState(undefined);
   const [bluetoothEnabled, setBluetoothEnabled] = useState(false);
-  const requestAccessFineLocationPermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version >= 23) {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
 
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (error) {
-        return Promise.reject(error);
-      }
-    } else {
-      return true;
-    }
-  };
   const enableBluetooth = async () => {
-    let granted = await requestAccessFineLocationPermission();
-    if (granted) {
-      RNBluetoothClassic.requestBluetoothEnabled();
-    }
+    RNBluetoothClassic.requestBluetoothEnabled();
   };
   useEffect(() => {
     const enabledSubscription = RNBluetoothClassic.onBluetoothEnabled(event =>
